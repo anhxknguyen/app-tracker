@@ -1,16 +1,13 @@
 import { protectedProcedure, publicProcedure, router } from "./trpc";
 import { db } from "@/drizzle/index";
 import { UserTable } from "@/drizzle/schema";
-import { z } from "zod";
+import { applicationRouter } from "./routers/application";
 
 export const appRouter = router({
+  application: applicationRouter,
   userList: protectedProcedure.query(async () => {
     const users = await db.select().from(UserTable);
     return users;
-  }),
-  userCreate: publicProcedure.input(z.string()).mutation(async (opts) => {
-    const { input } = opts;
-    return;
   }),
 });
 

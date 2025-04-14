@@ -22,17 +22,15 @@ export const UserTable = pgTable(
     email: varchar("email", { length: 255 }).notNull().unique(),
     role: UserRole("role").default("BASIC"),
   },
-  (t) => [uniqueIndex("emailIndex").on(t.email)]
+  (t) => [uniqueIndex("emailIndex").on(t.email)],
 );
 
 // Applications(id, userId, companyName, roleTitle, location, applicationLink, dateApplied, status)
 export const Applications = pgTable("applications", {
   id: uuid("id").primaryKey().defaultRandom(),
-
   userId: text("userId")
     .references(() => UserTable.id, { onDelete: "cascade" })
     .notNull(),
-
   companyName: varchar("companyName", { length: 255 }).notNull(),
   roleTitle: varchar("roleTitle", { length: 255 }).notNull(),
   location: varchar("location", { length: 255 }),

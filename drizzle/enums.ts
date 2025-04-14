@@ -8,4 +8,5 @@ export const ApplicationStatus = pgEnum("applicationStatus", [
   "Ongoing",
   "Accepted",
   "Rejected",
+  "Ghosted",
 ]);
