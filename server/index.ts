@@ -1,10 +1,10 @@
-import { publicProcedure, router } from "./trpc";
+import { protectedProcedure, publicProcedure, router } from "./trpc";
 import { db } from "@/drizzle/index";
 import { UserTable } from "@/drizzle/schema";
 import { z } from "zod";
 
 export const appRouter = router({
-  userList: publicProcedure.query(async () => {
+  userList: protectedProcedure.query(async () => {
     const users = await db.select().from(UserTable);
     return users;
   }),

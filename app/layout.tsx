@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "./styles/globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Provider from "@/app/trpc/Provider";
-import Navbar from "./_components/Navbar";
+import Navbar from "./_components/navbar";
+import { ThemeProvider } from "./_components/theme-provider";
 
 export const metadata: Metadata = {
   title: "Application Tracker",
@@ -16,10 +17,12 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body>
-          <Navbar />
-          <Provider>{children}</Provider>
+          <ThemeProvider>
+            <Navbar />
+            <Provider>{children}</Provider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
