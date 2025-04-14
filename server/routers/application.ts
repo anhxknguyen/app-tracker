@@ -1,30 +1,14 @@
 import { protectedProcedure, router } from "../trpc";
 import { db } from "@/drizzle/index";
 import { Applications, Question } from "@/drizzle/schema";
-import { z } from "zod";
 import { eq } from "drizzle-orm";
-
-export const applicationSchema = z.object({
-  companyName: z.string().max(255),
-  roleTitle: z.string().max(255),
-  location: z.string().max(255).optional(),
-  applicationLink: z.string().url().optional(),
-  questions: z
-    .array(
-      z.object({
-        question: z.string(),
-        answer: z.string(),
-      }),
-    )
-    .optional(),
-});
-
-export type ApplicationType = z.infer<typeof applicationSchema>;
+import { ApplicationSchema, Application } from "./types";
 
 export const applicationRouter = router({
+  // PROCEDURE: Add an application linked to an account into the database
   addApplication: protectedProcedure
-    .input(applicationSchema)
-    .mutation(async ({ ctx, input }: { ctx: any; input: ApplicationType }) => {
+    .input(ApplicationSchema)
+    .mutation(async ({ ctx, input }) => {
       if (!ctx.userId) {
         throw new Error("User ID is required");
       }
@@ -48,10 +32,12 @@ export const applicationRouter = router({
           })),
         );
       }
-      return { success: true };
+      return { success: true, id: createdApplication.id };
     }),
+
+  // PROCEDURE: Find applications created by the current logged in user.
   findApplications: protectedProcedure.query(async ({ ctx }) => {
-    // Must explicitly define what you want to select when joining
+    // Must explicitly define what you want to select when joining two tables.
     const apps = await db
       .select({
         id: Applications.id,
@@ -59,6 +45,7 @@ export const applicationRouter = router({
         roleTitle: Applications.roleTitle,
         location: Applications.location,
         applicationLink: Applications.applicationLink,
+        dateApplied: Applications.dateApplied,
         status: Applications.status,
         questions: Question,
       })
@@ -67,18 +54,20 @@ export const applicationRouter = router({
       .where(eq(Applications.userId, ctx.userId));
 
     // Group applications with their respective questions
-    const grouped = apps.reduce(
-      (acc, row) => {
-        const appId = row.id;
+    const groupedApplications = apps.reduce(
+      (applicationsArray, row) => {
+        const appId = row.id; // Get current row's application id to group.
 
         // If application does not have a group of questions already, create one.
-        if (!acc[appId]) {
-          acc[appId] = {
+        if (!applicationsArray[appId]) {
+          applicationsArray[appId] = {
             id: row.id,
+            userId: ctx.userId,
             companyName: row.companyName,
             roleTitle: row.roleTitle,
             location: row.location,
             applicationLink: row.applicationLink,
+            dateApplied: row.dateApplied,
             status: row.status,
             questions: [],
           };
@@ -86,17 +75,17 @@ export const applicationRouter = router({
 
         // If this row has a question, add it to the application that it belongs into
         if (row.questions?.id) {
-          acc[appId].questions.push({
+          applicationsArray[appId].questions.push({
             question: row.questions.question,
             answer: row.questions.answer,
           });
         }
-        return acc;
+        return applicationsArray;
       },
-      {} as Record<string, any>,
+      {} as Record<string, Application>,
     );
 
     // Return applications grouped with their questions
-    return Object.values(grouped);
+    return Object.values(groupedApplications);
   }),
 });
